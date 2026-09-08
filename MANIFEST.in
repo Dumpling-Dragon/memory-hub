@@ -1,0 +1,6 @@
+include LICENSE README.md requirements.txt config.example.json constraints-windows-py311.txt
+recursive-include scripts *.py *.ps1 *.cmd
+recursive-include docs *.md
+recursive-include skills SKILL.md
+recursive-include desktop-control *.cs *.ps1 *.manifest README.md
+recursive-include tests *.py *.cjs

@@ -1,0 +1,34 @@
+{
+  "host": "127.0.0.1",
+  "port": 17888,
+  "sync_interval_seconds": 300,
+  "startup_sync_delay_seconds": 15,
+  "max_file_bytes": 2000000,
+  "full_memory_mode": false,
+  "project_roots": [],
+  "web_export_roots": {},
+  "api_token_env": "",
+  "embedding": {
+    "enabled": false,
+    "base_url": "https://your-provider.example/v1",
+    "model": "your-embedding-model",
+    "api_key_env": "MEMORY_HUB_EMBEDDING_KEY",
+    "timeout_seconds": 60,
+    "max_input_chars": 6000
+  },
+  "reranker": {
+    "enabled": false,
+    "base_url": "https://your-provider.example/v1",
+    "path": "/rerank",
+    "model": "your-reranker-model",
+    "api_key_env": "MEMORY_HUB_RERANKER_KEY",
+    "timeout_seconds": 60
+  },
+  "ai": {
+    "enabled": false,
+    "base_url": "https://your-provider.example/v1",
+    "model": "your-chat-model",
+    "api_key_env": "MEMORY_HUB_CHAT_KEY",
+    "timeout_seconds": 90
+  }
+}

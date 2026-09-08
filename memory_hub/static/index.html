@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memory Hub · 私人档案室</title>
+<link rel="stylesheet" href="/static/style.css">
+<script>
+  (function(){
+    var t = localStorage.getItem('mh-theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+</head>
+<body>
+<main>
+
+  <header class="masthead">
+    <div class="masthead-top">
+      <span class="eyebrow">Local Work Memory</span>
+      <span class="edition">第〇〇一期 &middot; Vol. III &middot; No. 247</span>
+      <span class="masthead-top-right">
+        <span class="dateline" id="dateline">本机检索 &middot; 只读阅览</span>
+        <button id="theme-toggle" class="theme-toggle" aria-label="切换深浅模式" title="切换深浅模式">☾</button>
+      </span>
+    </div>
+    <div class="masthead-main">
+      <div class="titleblock">
+        <h1>Memory Hub</h1>
+        <p class="tagline">跨 Agent 工作记忆 &middot; 本机只读档案室</p>
+      </div>
+      <button id="sync" aria-label="立即同步来源">立即同步</button>
+    </div>
+    <div class="ornament-rule" aria-hidden="true"><span>❦</span></div>
+  </header>
+
+  <div class="layout">
+    <div class="content">
+
+      <section class="search slip">
+        <div class="slip-head">
+          <span class="slip-title">检索单 &middot; Requisition</span>
+          <span class="slip-serial">FORM № SR-01</span>
+        </div>
+        <div class="slip-body">
+          <label for="query">检索词 ／ Keyword</label>
+          <div class="query-row">
+            <input id="query" autofocus placeholder="例如：继续图纸检测，或 Hermes 401" autocomplete="off">
+            <button id="search">搜索</button>
+            <button id="ask" class="secondary" title="需在本机配置分析模型">提问</button>
+          </div>
+          <p class="hint">Enter 搜索 &middot; 结果为本机跨 Agent 记录</p>
+        </div>
+      </section>
+
+      <section id="answer-section" hidden aria-live="polite">
+        <div class="section-title"><h2><span class="sec-no">§ 二</span>基于本地记录的回答</h2></div>
+        <div id="answer" class="empty"></div>
+      </section>
+
+      <section aria-live="polite">
+        <div class="section-title">
+          <h2><span class="sec-no">§ 三</span>检索结果 <span class="sec-lat">Inventarium</span></h2>
+          <span id="count"></span>
+        </div>
+        <div id="results" class="results"></div>
+      </section>
+
+    </div>
+
+    <aside class="rail">
+
+      <section class="status-section">
+        <div class="section-title"><h2><span class="sec-no">§ 四</span>来源编目 <span class="sec-lat">Catalogus</span></h2></div>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section class="agent-prompt" aria-labelledby="agent-prompt-title">
+        <div class="section-title">
+          <h2 id="agent-prompt-title"><span class="sec-no">§ 五</span>交给任何 AI 查询</h2>
+        </div>
+        <p class="hint rail-hint">没有 MCP 也能直接用本机 HTTP 接口。</p>
+        <button id="copy-agent-prompt" class="secondary" aria-label="复制给其他 AI 的查询提示词">一键复制提示词</button>
+        <details id="agent-prompt-details">
+          <summary>展开提示词全文</summary>
+          <textarea id="agent-prompt-text" readonly aria-label="可复制给其他 AI 的查询提示词"></textarea>
+        </details>
+        <p id="copy-status" class="hint" aria-live="polite"></p>
+      </section>
+
+    </aside>
+  </div>
+
+  <footer class="colophon">
+    <div class="colophon-line">承印 &middot; Memory Hub 本机检索版</div>
+    <div class="colophon-line">阅览须知：本册仅供本人阅览，不写入、删除或修改任何来源记录。</div>
+  </footer>
+
+</main>
+
+<template id="result">
+  <article class="result">
+    <div class="result-head">
+      <span class="badge"></span>
+      <time></time>
+      <span class="folio"></span>
+    </div>
+    <div class="result-body">
+      <h3></h3>
+      <p class="project"></p>
+      <p class="excerpt"></p>
+      <div class="actions">
+        <button class="open">打开原位置</button>
+        <button class="detail">查看详情</button>
+      </div>
+    </div>
+  </article>
+</template>
+
+<script src="/static/api.js"></script>
+<script src="/static/app.js"></script>
+
+<aside class="embed-fab" id="embed-fab" hidden>
+  <a href="/embedding-progress" class="embed-fab-link" title="查看向量化进度详情">
+    <span class="embed-fab-label">向量化</span>
+    <span class="embed-fab-pct" id="embed-fab-pct">&mdash;</span>
+    <span class="embed-fab-bar"><span class="embed-fab-fill" id="embed-fab-fill"></span></span>
+    <span class="embed-fab-go">&#8599;</span>
+  </a>
+</aside>
+<style>
+  .embed-fab { position: fixed; right: 18px; bottom: 18px; z-index: 50; }
+  .embed-fab-link {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--paper); color: var(--ink); text-decoration: none;
+    border: 1px solid var(--ink); border-top: 3px double var(--ink);
+    box-shadow: 0 6px 20px -10px var(--shadow);
+    padding: 8px 12px;
+    font-family: var(--mono, ui-monospace, Consolas, monospace); font-size: 0.82rem;
+  }
+  .embed-fab-label { color: var(--accent); font-weight: 700; letter-spacing: 0.04em; }
+  .embed-fab-pct { min-width: 40px; text-align: right; font-weight: 700; }
+  .embed-fab-bar {
+    display: inline-block; width: 64px; height: 7px; position: relative; overflow: hidden;
+    border: 1px solid var(--rule); background: var(--paper-edge);
+  }
+  .embed-fab-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+    background: linear-gradient(var(--accent), var(--accent-2));
+  }
+  .embed-fab-go { color: var(--accent); font-weight: 700; }
+  .embed-fab-link:hover { box-shadow: 0 8px 26px -10px var(--shadow); }
+  @media (max-width: 560px) { .embed-fab { right: 10px; bottom: 10px; } }
+</style>
+<script src="/static/status-poll.js"></script>
+<script>
+  (function () {
+    var fab = document.getElementById('embed-fab');
+    var pct = document.getElementById('embed-fab-pct');
+    var fill = document.getElementById('embed-fab-fill');
+    pollMemoryStatus(function (d) {
+          var e = d.embedding || {};
+          var docs = e.documents || 0, emb = e.embedded || 0;
+          var p = docs ? Math.round(emb / docs * 100) : 0;
+          pct.textContent = p + '%';
+          fill.style.width = p + '%';
+          fab.hidden = false;
+    });
+  })();
+</script>
+</body>
+</html>

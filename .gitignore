@@ -1,0 +1,50 @@
+# Local environments and build output
+.venv/
+.build/
+.test-work/
+portable/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Local migration, audit, release and sharing material
+migration*/
+audit*/
+release*/
+share-drafts/
+diagnostics*/
+diagnostic-*.md
+HANDOVER*.md
+MERGE_HANDOFF.md
+
+# Runtime databases, sidecars, logs and backups
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.log
+*.bak
+*.backup
+backup/
+backups/
+
+# Local configuration and secrets
+config.local.json
+.env
+.env.*
+*.secret
+*.exe
+*.dll
+*.ico
+desktop-control/bin/
+desktop-control/verification/
+PATCH-*.md
+patch-*.diff
+UI交接*
+
+# Local paths belong in %LOCALAPPDATA%\MemoryHub\config.json.

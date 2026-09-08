@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>向量化进度 · Memory Hub</title>
+<link rel="stylesheet" href="/static/style.css">
+<script>
+  (function(){
+    var t = localStorage.getItem('mh-theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
+<style>
+  main { position: relative; z-index: 1; max-width: var(--measure); margin: 0 auto; padding: 30px 22px 0; }
+  .back-link, .back-btn {
+    font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em;
+    color: var(--mute); text-decoration: none;
+    border: 1px solid var(--rule); padding: 6px 12px;
+    transition: border-color .15s, color .15s; white-space: nowrap;
+  }
+  .back-link:hover, .back-btn:hover { color: var(--ink); border-color: var(--ink); }
+
+  /* 大进度数 */
+  .big-stat { display: flex; align-items: baseline; gap: 14px; margin: 4px 0 14px; }
+  .big-stat #pct {
+    font-family: var(--serif); font-weight: 700; font-size: 3.1rem; line-height: 1;
+    color: var(--accent); letter-spacing: -0.01em;
+  }
+  .big-sub { font-family: var(--serif); font-size: 1.1rem; color: var(--mute); }
+
+  /* 进度条 */
+  .progress-track {
+    height: 22px; border: 1px solid var(--ink);
+    background: repeating-linear-gradient(90deg, transparent 0 9px, color-mix(in srgb, var(--ink) 6%, transparent) 9px 10px);
+    position: relative; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 0%;
+    background: var(--accent);
+    border-right: 2px solid var(--accent-2);
+    transition: width .6s ease;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    margin-top: 9px; font-family: var(--mono); font-size: 0.8rem; color: var(--mute); letter-spacing: 0.03em;
+  }
+  .progress-meta span strong { color: var(--ink); font-weight: 700; }
+
+  /* 来源编目 */
+  .sources { margin-top: 12px; border-top: 2px solid var(--ink); }
+  .src-row {
+    display: grid; grid-template-columns: 1.4fr 1fr auto; align-items: baseline; gap: 10px;
+    padding: 9px 8px; border-bottom: 1px solid var(--rule);
+  }
+  .src-row .name { font-family: var(--serif); font-weight: 700; }
+  .src-row .cnt { font-family: var(--mono); font-size: 0.84rem; color: var(--mute); text-align: right; }
+  .src-row .tag {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.05em;
+    padding: 1px 7px; border: 1px solid var(--rule); color: var(--mute);
+  }
+  .src-row .tag.meta { color: var(--gold); border-color: var(--gold); }
+  .src-row .tag.err { color: var(--accent); border-color: var(--accent); }
+
+  /* 趋势图 */
+  .chart-wrap { margin-top: 12px; border: 1px solid var(--ink); background: var(--sheet-2); padding: 10px; }
+  .chart-wrap canvas { width: 100%; height: auto; display: block; }
+
+  /* 运行状态 */
+  .run { margin-top: 10px; font-family: var(--mono); font-size: 0.8rem; color: var(--mute); line-height: 1.9; }
+  .run b { color: var(--ink); }
+  .agent-prompt .back-btn { display: inline-block; margin-top: 4px; }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="masthead">
+    <div class="masthead-top">
+      <span class="eyebrow">Local Work Memory</span>
+      <span class="edition">副刊 · Vol. III &middot; No. 248</span>
+      <span class="masthead-top-right">
+        <span class="dateline" id="dateline">向量化进度 &middot; 只读</span>
+        <button id="theme-toggle" class="theme-toggle" aria-label="切换深浅模式" title="切换深浅模式">☾</button>
+      </span>
+    </div>
+    <div class="masthead-main">
+      <div class="titleblock">
+        <h1>向量化进度</h1>
+        <p class="tagline">Embedding Progress &middot; 本机档案室副刊</p>
+      </div>
+      <a href="/" class="back-link">← 返回档案室</a>
+    </div>
+    <div class="ornament-rule" aria-hidden="true"><span>❦</span></div>
+  </header>
+
+  <div class="layout">
+    <div class="content">
+
+      <section class="slip">
+        <div class="slip-head">
+          <span class="slip-title">进度单 &middot; Progress</span>
+          <span class="slip-serial">FORM № EP-01</span>
+        </div>
+        <div class="slip-body">
+          <div class="big-stat">
+            <span id="pct">—</span>
+            <span class="big-sub">已向量化</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
+          <div class="progress-meta">
+            <span id="nums">已向量化 <strong>—</strong> / 总计 —</span>
+            <span id="remain">剩余 <strong>—</strong></span>
+            <span id="eta">预计 <strong>—</strong></span>
+          </div>
+          <p class="hint" id="model-line">模型 —</p>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <h2><span class="sec-no">§ 二</span>各来源编目 <span class="sec-lat">Catalogus</span></h2>
+        </div>
+        <div id="sources" class="sources"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <h2><span class="sec-no">§ 三</span>余量趋势 <span class="sec-lat">Declinatio</span></h2>
+          <span id="trend-hint" class="hint">约每 10 秒取样</span>
+        </div>
+        <div class="chart-wrap"><canvas id="trend" width="900" height="260"></canvas></div>
+      </section>
+
+    </div>
+
+    <aside class="rail">
+
+      <section class="status-section">
+        <div class="section-title"><h2><span class="sec-no">§ 四</span>运行状态</h2></div>
+        <div id="run" class="run">连接中…</div>
+      </section>
+
+      <section class="agent-prompt" aria-labelledby="ap-title">
+        <div class="section-title"><h2 id="ap-title"><span class="sec-no">§ 五</span>本页说明</h2></div>
+        <p class="hint rail-hint">仅读取 <code>/api/status</code>，不写入、不重启服务。</p>
+        <a href="/" class="back-btn">← 返回主档案室</a>
+      </section>
+
+    </aside>
+  </div>
+
+  <footer class="colophon">
+    <div class="colophon-line">承印 &middot; Memory Hub 本机检索版</div>
+    <div class="colophon-line">阅览须知：本册仅供本人阅览，不写入、删除或修改任何来源记录。</div>
+  </footer>
+
+</main>
+
+<script>
+  function escapeText(value) {
+    const node = document.createElement('span'); node.textContent = String(value ?? ''); return node.innerHTML;
+  }
+  // 主题切换（与主档案室一致）
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    btn.addEventListener('click', function () {
+      var cur = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = cur;
+      localStorage.setItem('mh-theme', cur);
+      btn.textContent = cur === 'dark' ? '☀' : '☾';
+      drawTrend();
+    });
+    btn.textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
+  })();
+
+  var trendHistory = [];     // {t, remaining}
+  try { var _s = JSON.parse(localStorage.getItem('mh-trend') || '[]'); if (Array.isArray(_s)) trendHistory = _s.slice(-200); } catch (e) {}
+  var lastRemaining = null;
+  var lastT = null;
+
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return Math.round(n).toLocaleString('en-US');
+  }
+
+  function etaText(ratePerSec, remaining) {
+    if (!ratePerSec || ratePerSec <= 0 || remaining <= 0) return '—';
+    var secs = remaining / ratePerSec;
+    if (secs < 60) return Math.ceil(secs) + ' 秒';
+    if (secs < 3600) return Math.ceil(secs / 60) + ' 分';
+    return (secs / 3600).toFixed(1) + ' 时';
+  }
+
+  function render(data) {
+    var emb = data.embedding ? data.embedding.embedded : 0;
+    var total = data.embedding ? data.embedding.documents : 0;
+    var remaining = Math.max(0, total - emb);
+    var pct = total > 0 ? (emb / total * 100) : 0;
+
+    document.getElementById('pct').textContent = pct.toFixed(1) + '%';
+    document.getElementById('bar').style.width = pct.toFixed(2) + '%';
+    document.getElementById('nums').innerHTML = '已向量化 <strong>' + fmt(emb) + '</strong> / 总计 ' + fmt(total);
+    document.getElementById('remain').innerHTML = '剩余 <strong>' + fmt(remaining) + '</strong>';
+
+    var now = Date.now();
+    if (lastRemaining !== null && lastT !== null) {
+      var dt = (now - lastT) / 1000;
+      var drop = lastRemaining - remaining;
+      var rate = dt > 0 ? drop / dt : 0;
+      document.getElementById('eta').innerHTML = '预计 <strong>' + etaText(rate, remaining) + '</strong>';
+    }
+    lastRemaining = remaining; lastT = now;
+
+    document.getElementById('model-line').textContent =
+      '模型 ' + (data.embedding && data.embedding.model ? data.embedding.model : '—') +
+      (data.ai_enabled ? ' · 分析已启用' : ' · 分析未启用');
+
+    // 来源编目
+    var box = document.getElementById('sources');
+    box.innerHTML = '';
+    (data.sources || []).forEach(function (s) {
+      var row = document.createElement('div');
+      row.className = 'src-row';
+      var tag = '';
+      if (s.state === 'error') tag = '<span class="tag err">error</span>';
+      else if (s.detail && s.detail !== 'ok') tag = '<span class="tag meta">' + escapeText(s.detail) + '</span>';
+      else tag = '<span class="tag">ok</span>';
+      row.innerHTML =
+        '<span class="name">' + escapeText(s.source) + '</span>' +
+        '<span class="cnt">' + fmt(s.document_count) + ' 篇</span>' +
+        tag;
+      box.appendChild(row);
+    });
+
+    // 运行状态
+    var d = new Date();
+    document.getElementById('run').innerHTML =
+      '取样时刻 <b>' + d.toLocaleTimeString('zh-CN') + '</b><br>' +
+      '监听 <b>' + escapeText(data.host) + ':' + escapeText(data.port) + '</b><br>' +
+      '来源数 <b>' + (data.sources || []).length + '</b>';
+
+    // 趋势
+    trendHistory.push({ t: now, remaining: remaining });
+    if (trendHistory.length > 200) trendHistory.shift();
+    try { localStorage.setItem('mh-trend', JSON.stringify(trendHistory.slice(-200))); } catch (e) {}
+    drawTrend();
+  }
+
+  function drawTrend() {
+    var cv = document.getElementById('trend');
+    var ctx = cv.getContext('2d');
+    var W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    var accent = css('--accent') || '#8B3A32';
+    var ink = css('--ink') || '#1F1F1B';
+    var rule = css('--rule') || '#B6AE9F';
+    var mute = css('--mute') || '#5E584C';
+
+    // 网格
+    ctx.strokeStyle = rule; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+    for (var i = 0; i <= 4; i++) {
+      var y = 12 + (H - 36) * i / 4;
+      ctx.beginPath(); ctx.moveTo(52, y); ctx.lineTo(W - 12, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    if (trendHistory.length === 0) {
+      ctx.fillStyle = mute; ctx.font = '13px ui-monospace, Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('等待首次取样…', W / 2, H / 2);
+      return;
+    }
+
+    // 单点：画水平基准线 + 圆点 + 当前值，避免“空白”错觉
+    if (trendHistory.length === 1) {
+      var v0 = trendHistory[0].remaining;
+      var yc = H / 2;
+      ctx.strokeStyle = accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(52, yc); ctx.lineTo(W - 12, yc); ctx.stroke();
+      ctx.fillStyle = accent;
+      ctx.beginPath(); ctx.arc((W + 52 - 12) / 2, yc, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = mute; ctx.font = '11px ui-monospace, Consolas, monospace';
+      ctx.textAlign = 'right'; ctx.fillText(fmt(v0), 52 - 6, yc - 5);
+      ctx.textAlign = 'left'; ctx.fillText('余量（remaining）· 仅 1 个取样', 52, H - 6);
+      return;
+    }
+
+    var maxR = 0, minR = Infinity;
+    trendHistory.forEach(function (p) { maxR = Math.max(maxR, p.remaining); minR = Math.min(minR, p.remaining); });
+    var span = Math.max(1, Math.round(maxR * 0.06));   // 至少 6% 缓冲，持平时不贴网格线
+    maxR = maxR + span; minR = Math.max(0, minR - span);
+    var padL = 52, padR = 12, padT = 12, padB = 26;
+    function X(i) { return padL + (W - padL - padR) * i / (trendHistory.length - 1); }
+    function Y(val) { return padT + (H - padT - padB) * (1 - (val - minR) / (maxR - minR)); }
+
+    // 面积
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(trendHistory[0].remaining));
+    trendHistory.forEach(function (p, i) { ctx.lineTo(X(i), Y(p.remaining)); });
+    ctx.lineTo(X(trendHistory.length - 1), H - padB);
+    ctx.lineTo(X(0), H - padB);
+    ctx.closePath();
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1;
+
+    // 线
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(trendHistory[0].remaining));
+    trendHistory.forEach(function (p, i) { ctx.lineTo(X(i), Y(p.remaining)); });
+    ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.stroke();
+
+    // 末端点
+    var last = trendHistory[trendHistory.length - 1];
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(X(trendHistory.length - 1), Y(last.remaining), 3.5, 0, Math.PI * 2); ctx.fill();
+
+    // 轴标注
+    ctx.fillStyle = mute; ctx.font = '11px ui-monospace, Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt(Math.round(maxR - span)), padL - 6, padT + 4);
+    ctx.fillText(fmt(Math.round(minR + span)), padL - 6, H - padB);
+    ctx.textAlign = 'left';
+    ctx.fillText('余量（remaining）', padL, H - 6);
+
+    // 近 6 次取样持平 → 明确提示（embed 可能在批次间歇）
+    var mx = 0, mn = Infinity;
+    trendHistory.slice(-6).forEach(function (p) { mx = Math.max(mx, p.remaining); mn = Math.min(mn, p.remaining); });
+    if (mx === mn) {
+      ctx.fillStyle = accent;
+      ctx.fillText('● 近几次取样余量持平（embed 可能在批次间歇）', padL + 4, padT + 16);
+    }
+  }
+
+  function startPolling() {
+    pollMemoryStatus(function (data) {
+      render(data);
+      document.getElementById('dateline').textContent = '向量化进度 · 在线';
+    }, function (e) {
+      document.getElementById('dateline').textContent = '向量化进度 · 连接失败';
+      document.getElementById('run').textContent = '无法连接 ' + location.host + '：' + e;
+    });
+  }
+</script>
+<script src="/static/api.js"></script>
+<script src="/static/status-poll.js" onload="startPolling()"></script>
+</body>
+</html>

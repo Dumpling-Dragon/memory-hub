@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.cmd -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.bat -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.ps1 text eol=crlf

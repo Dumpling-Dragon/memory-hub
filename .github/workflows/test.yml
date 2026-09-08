@@ -1,0 +1,16 @@
+name: Test and package
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -c constraints-windows-py311.txt ".[desktop,test]" build
+      - run: python scripts/run_tests.py
+      - run: python -m build
+      - run: python scripts/wheel_smoke.py

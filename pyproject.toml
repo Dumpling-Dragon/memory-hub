@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-hub"
+version = "0.1.0"
+description = "Local-first cross-agent work memory search"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110,<1", "uvicorn[standard]>=0.27,<1"]
+
+[project.optional-dependencies]
+desktop = ["pystray>=0.19,<1; platform_system == 'Windows'"]
+test = ["httpx>=0.27,<1", "httpx2>=2,<3"]
+
+[project.scripts]
+memory = "memory_hub.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["memory_hub*"]
+
+[tool.setuptools.package-data]
+memory_hub = ["static/*"]
